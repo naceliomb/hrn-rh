@@ -1,11 +1,11 @@
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const credencials = require("../../config/credencials.json");
-
+require("dotenv/config");
 const getDoc = async (archiveId) => {
     const doc = new GoogleSpreadsheet(archiveId);
     await doc.useServiceAccountAuth({
-        client_email: credencials.client_email,
-        private_key: credencials.private_key.replace(/\\n/g, '\n')
+        client_email: process.env.CLIENT_EMAIL,
+        private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n')
     });
     await doc.loadInfo();
     console.log(`Conectado com sucesso ao arquivo: ${doc.title}`);
