@@ -285,4 +285,22 @@ router.get("/archives/cards/:doc", async(req,res) => {
 
 });
 
+router.get("/cleaner", async (req, res) => {
+    try{
+        const downloadsPath = path.join(__dirname,"../", "../", "public", "downloads");
+        if(fs.existsSync(downloadsPath)){
+            fs.rmSync(downloadsPath, { recursive: true, force: true });
+            return res.status(200).json("REMOVED ALL FILES!");
+        }
+
+        return res.status(400).json("DONT HAVE FILES");
+
+
+    }catch(err){
+        console.log(err);
+        return res.status(500).json("SEVER ERROR");
+    }
+});
+
+
 module.exports = router;
