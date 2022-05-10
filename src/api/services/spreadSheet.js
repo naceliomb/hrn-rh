@@ -1,5 +1,5 @@
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const credencials = require("../../config/credencials.json");
+// const credencials = require("../../config/credencials.json");
 require("dotenv/config");
 const getDoc = async (archiveId) => {
     const doc = new GoogleSpreadsheet(archiveId);
