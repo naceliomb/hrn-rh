@@ -223,7 +223,7 @@ router.get("/archives/cards/:doc", async(req,res) => {
     let colaborators = [];
 
     const filePath = path.join(__dirname, "../", "../", "global", "welcomeAll.ejs");
-    const downloadsPath = path.join(__dirname,"../", "../", "../", "downloads");
+    const downloadsPath = path.join(__dirname,"../", "../", "public", "downloads");
     const dateDirectoryPath = path.join(downloadsPath, date.replace(/[/]/g,"-"));
 
     if(!docId){
