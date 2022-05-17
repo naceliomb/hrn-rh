@@ -61,7 +61,7 @@ router.get("/colaborators/email-enterprise/:doc", async(req,res)=>{
             sheet.getRows().then(rows => {
                 rows.map( row => {
                     if(empty == "true" && !date ){
-                        if(!row['E-MAIL INSTITUCIONAL']&&row['NOME']){
+                        if(!row['E-MAIL INSTITUCIONAL']&&row['NOME']&& row['TEMPORARIO'] != "TRUE"){
                             const colaborator = new Colaborator(row['NOME'], row['SETOR'], row['ESCALA'], row['FEIRISTA'] == "TRUE" ? true : false, row['CONTATO'], row['STATUS'], row['FUNÇÃO'], row['CPF'], row['E-MAIL'], row['E-MAIL INSTITUCIONAL'], new Date(row['DATA - ADMISSÃO']), row['SITUAÇÃO - DOCUMENTOS'], row['OBSERVAÇÕES']);
                             colaborators.push(colaborator);
                         }
