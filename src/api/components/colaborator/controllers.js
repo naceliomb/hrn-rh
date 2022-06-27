@@ -3,7 +3,6 @@ const Colaborator = require('./model');
 const { getDoc } = require('../../services/spreadSheet');
 const path = require('path');
 const ejs = require('ejs');
-const pdf = require('html-pdf');
 const fs = require('fs');
 
 const router = express.Router();
@@ -24,18 +23,24 @@ router.get('/colaborators/:doc', async (req, res) => {
             sheet.getRows().then((rows) => {
                 rows.map((row) => {
                     if (row['NOME']) {
+                        const date = new Date(
+                            row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4),
+                            row['DATA - ADMISSÃO'].substring(3, 5),
+                            row['DATA - ADMISSÃO'].substring(0, 2)
+                        );
                         const colaborator = new Colaborator(
                             row['NOME'],
                             row['SETOR'],
                             row['ESCALA'],
                             row['FEIRISTA'] == 'TRUE' ? true : false,
+                            row['TEMPORARIO'] == 'TRUE' ? true : false,
                             row['CONTATO'],
                             row['STATUS'],
                             row['FUNÇÃO'],
                             row['CPF'],
                             row['E-MAIL'],
                             row['E-MAIL INSTITUCIONAL'],
-                            new Date(row['DATA - ADMISSÃO']),
+                            date,
                             row['SITUAÇÃO - DOCUMENTOS'],
                             row['OBSERVAÇÕES']
                         );
@@ -45,6 +50,68 @@ router.get('/colaborators/:doc', async (req, res) => {
 
                 res.status(200).json(colaborators);
                 return;
+            });
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json('SERVER ERROR');
+    }
+});
+
+router.get('/colaborators/:name/:doc', async (req, res) => {
+    console.log('access - http://localhost:3000/colaborators/:name/:doc');
+    const docId = req.params.doc;
+    const name = req.params.name;
+    let colaborators = [];
+
+    if (!docId) {
+        res.status(400).json('INVALID DOC ID');
+        return;
+    }
+
+    try {
+        getDoc(docId).then(async (doc) => {
+            const sheet = doc.sheetsByIndex[0];
+            console.log(`SHEET NAME: ${sheet.title}`);
+
+            sheet.getRows().then((rows) => {
+                if (name) {
+                    rows.map((row) => {
+                        if (row['NOME'].toUpperCase().substring(0, name.length) == name.toUpperCase()) {
+                            const date = new Date(
+                                row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4),
+                                row['DATA - ADMISSÃO'].substring(3, 5),
+                                row['DATA - ADMISSÃO'].substring(0, 2)
+                            );
+                            const colaborator = new Colaborator(
+                                row['NOME'],
+                                row['SETOR'],
+                                row['ESCALA'],
+                                row['FEIRISTA'] == 'TRUE' ? true : false,
+                                row['TEMPORARIO'] == 'TRUE' ? true : false,
+                                row['CONTATO'],
+                                row['STATUS'],
+                                row['FUNÇÃO'],
+                                row['CPF'],
+                                row['E-MAIL'],
+                                row['E-MAIL INSTITUCIONAL'],
+                                date,
+                                row['SITUAÇÃO - DOCUMENTOS'],
+                                row['OBSERVAÇÕES']
+                            );
+                            colaborators.push(colaborator);
+                        }
+                    });
+                    if (!colaborators.length) {
+                        res.status(404).json('COLABORATOR NOT FOUND');
+                        return;
+                    }
+                    res.status(200).json(colaborators);
+                    return;
+                } else {
+                    res.status(400).json('INVALID NAME');
+                    return;
+                }
             });
         });
     } catch (err) {
@@ -145,62 +212,6 @@ router.get('/colaborators/email-enterprise/:doc', async (req, res) => {
 
                 res.status(200).json(colaborators);
                 return;
-            });
-        });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json('SERVER ERROR');
-    }
-});
-
-router.get('/colaborators/:name/:doc', async (req, res) => {
-    console.log('access - http://localhost:3000/colaborators/:name/:doc');
-    const docId = req.params.doc;
-    const name = req.params.name;
-    let colaborators = [];
-
-    if (!docId) {
-        res.status(400).json('INVALID DOC ID');
-        return;
-    }
-
-    try {
-        getDoc(docId).then(async (doc) => {
-            const sheet = doc.sheetsByIndex[0];
-            console.log(`SHEET NAME: ${sheet.title}`);
-
-            sheet.getRows().then((rows) => {
-                if (name) {
-                    rows.map((row) => {
-                        if (row['NOME'].toUpperCase() == name.toUpperCase()) {
-                            const colaborator = new Colaborator(
-                                row['NOME'],
-                                row['SETOR'],
-                                row['ESCALA'],
-                                row['FEIRISTA'] == 'TRUE' ? true : false,
-                                row['CONTATO'],
-                                row['STATUS'],
-                                row['FUNÇÃO'],
-                                row['CPF'],
-                                row['E-MAIL'],
-                                row['E-MAIL INSTITUCIONAL'],
-                                new Date(row['DATA - ADMISSÃO']),
-                                row['SITUAÇÃO - DOCUMENTOS'],
-                                row['OBSERVAÇÕES']
-                            );
-                            colaborators.push(colaborator);
-                        }
-                    });
-                    if (!colaborators.length) {
-                        res.status(404).json('COLABORATOR NOT FOUND');
-                        return;
-                    }
-                    res.status(200).json(colaborators);
-                    return;
-                } else {
-                    res.status(400).json('INVALID NAME');
-                    return;
-                }
             });
         });
     } catch (err) {
