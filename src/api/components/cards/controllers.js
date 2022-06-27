@@ -75,7 +75,6 @@ router.get('/archives/card/:name/:doc', async (req, res) => {
 
 router.get('/archives/cards/:doc', async (req, res) => {
     console.log('access - http://localhost:3000/archives/cards');
-
     const docId = req.params.doc;
     const date = req.query.date;
     let colaborators = [];
