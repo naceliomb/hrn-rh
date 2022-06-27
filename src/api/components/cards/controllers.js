@@ -92,6 +92,7 @@ router.get('/archives/cards/:doc', async (req, res) => {
         return;
     }
 
+    
     try {
         getDoc(docId).then(async (doc) => {
             const sheet = doc.sheetsByIndex[0];
