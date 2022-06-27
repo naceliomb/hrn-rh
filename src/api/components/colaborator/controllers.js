@@ -4,6 +4,7 @@ const { getDoc } = require('../../services/spreadSheet');
 const path = require('path');
 const ejs = require('ejs');
 const fs = require('fs');
+const { nextTick } = require('process');
 
 const router = express.Router();
 
@@ -23,11 +24,11 @@ router.get('/colaborators/:doc', async (req, res) => {
             sheet.getRows().then((rows) => {
                 rows.map((row) => {
                     if (row['NOME']) {
-                        const date = new Date(
-                            row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4),
-                            row['DATA - ADMISSÃO'].substring(3, 5),
-                            row['DATA - ADMISSÃO'].substring(0, 2)
-                        );
+                        const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+                            
+                            const date = new Date(year+'-'+month+'-'+day);
                         const colaborator = new Colaborator(
                             row['NOME'],
                             row['SETOR'],
@@ -68,7 +69,6 @@ router.get('/colaborators/:name/:doc', async (req, res) => {
         res.status(400).json('INVALID DOC ID');
         return;
     }
-
     try {
         getDoc(docId).then(async (doc) => {
             const sheet = doc.sheetsByIndex[0];
@@ -78,11 +78,11 @@ router.get('/colaborators/:name/:doc', async (req, res) => {
                 if (name) {
                     rows.map((row) => {
                         if (row['NOME'].toUpperCase().substring(0, name.length) == name.toUpperCase()) {
-                            const date = new Date(
-                                row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4),
-                                row['DATA - ADMISSÃO'].substring(3, 5),
-                                row['DATA - ADMISSÃO'].substring(0, 2)
-                            );
+                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+                            
+                            const date = new Date(year+'-'+month+'-'+day);
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
@@ -120,7 +120,7 @@ router.get('/colaborators/:name/:doc', async (req, res) => {
     }
 });
 
-router.get('/colaborators/email-enterprise/:doc', async (req, res) => {
+router.get('/mail/colaborators/:doc', async (req, res) => {
     console.log('access - http://localhost:3000/colaborators/email-enterprise/:doc');
     const docId = req.params.doc;
     const empty = req.query.empty;
@@ -139,67 +139,71 @@ router.get('/colaborators/email-enterprise/:doc', async (req, res) => {
 
             sheet.getRows().then((rows) => {
                 rows.map((row) => {
-                    if (empty == 'true' && !date) {
-                        if (!row['E-MAIL INSTITUCIONAL'] && row['NOME'] && row['TEMPORARIO'] != 'TRUE') {
+                    if(!empty){
+                        if(row['DATA - ADMISSÃO'] == date && row['E-MAIL INSTITUCIONAL'] && row['NOME'] || !date && row['E-MAIL INSTITUCIONAL'] && row['NOME']){
+                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+                            
+                            const date = new Date(year+'-'+month+'-'+day);
+    
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
                                 row['ESCALA'],
                                 row['FEIRISTA'] == 'TRUE' ? true : false,
+                                row['TEMPORARIO'] == 'TRUE' ? true : false,
                                 row['CONTATO'],
                                 row['STATUS'],
                                 row['FUNÇÃO'],
                                 row['CPF'],
                                 row['E-MAIL'],
                                 row['E-MAIL INSTITUCIONAL'],
-                                new Date(row['DATA - ADMISSÃO']),
+                                date,
                                 row['SITUAÇÃO - DOCUMENTOS'],
                                 row['OBSERVAÇÕES']
                             );
                             colaborators.push(colaborator);
+
                         }
-                    } else if (empty == 'true' && date) {
-                        if (!row['E-MAIL INSTITUCIONAL'] && row['NOME'] && row['TEMPORARIO'] != 'TRUE' && row['DATA - ADMISSÃO'] == date) {
+                    }else{
+                        if(row['DATA - ADMISSÃO'] == date && !row['E-MAIL INSTITUCIONAL'] && row['TEMPORARIO'] != 'TRUE' && row['NOME'] || !date && !row['E-MAIL INSTITUCIONAL'] && row['TEMPORARIO'] != 'TRUE' && row['NOME']){
+                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+                            
+                            const date = new Date(year+'-'+month+'-'+day);
+
+    
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
                                 row['ESCALA'],
                                 row['FEIRISTA'] == 'TRUE' ? true : false,
+                                row['TEMPORARIO'] == 'TRUE' ? true : false,
                                 row['CONTATO'],
                                 row['STATUS'],
                                 row['FUNÇÃO'],
                                 row['CPF'],
                                 row['E-MAIL'],
                                 row['E-MAIL INSTITUCIONAL'],
-                                new Date(row['DATA - ADMISSÃO']),
+                                date,
                                 row['SITUAÇÃO - DOCUMENTOS'],
                                 row['OBSERVAÇÕES']
                             );
                             colaborators.push(colaborator);
-                        }
-                    } else {
-                        if (row['E-MAIL INSTITUCIONAL'] && row['NOME']) {
-                            const colaborator = new Colaborator(
-                                row['NOME'],
-                                row['SETOR'],
-                                row['ESCALA'],
-                                row['FEIRISTA'] == 'TRUE' ? true : false,
-                                row['CONTATO'],
-                                row['STATUS'],
-                                row['FUNÇÃO'],
-                                row['CPF'],
-                                row['E-MAIL'],
-                                row['E-MAIL INSTITUCIONAL'],
-                                new Date(row['DATA - ADMISSÃO']),
-                                row['SITUAÇÃO - DOCUMENTOS'],
-                                row['OBSERVAÇÕES']
-                            );
-                            colaborators.push(colaborator);
+
                         }
                     }
+
                 });
 
-                if (template == 'true') {
+                if(!colaborators.length){
+                    res.status(404).json('COLABORATORS NOT FOUND');
+                    return;
+                }
+
+                if(template == 'true') {
                     let message = '';
                     colaborators.forEach((colaborator) => {
                         message =
