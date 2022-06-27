@@ -11,6 +11,7 @@ const router = express.Router();
 router.get('/colaborators/:doc', async (req, res) => {
     console.log('access - http://localhost:3000/api/v1/colaborators/:doc');
     const docId = req.params.doc;
+    const date = req.query.date;
     let colaborators = [];
     if (!docId) {
         res.status(400).json('EMPTY DOC ID');
@@ -23,31 +24,63 @@ router.get('/colaborators/:doc', async (req, res) => {
 
             sheet.getRows().then((rows) => {
                 rows.map((row) => {
-                    if (row['NOME']) {
-                        const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                    if (!date) {
+                        if (row['NOME']) {
+                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
                             const month = row['DATA - ADMISSÃO'].substring(3, 5);
                             const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
-                            
-                            const date = new Date(year+'-'+month+'-'+day);
-                        const colaborator = new Colaborator(
-                            row['NOME'],
-                            row['SETOR'],
-                            row['ESCALA'],
-                            row['FEIRISTA'] == 'TRUE' ? true : false,
-                            row['TEMPORARIO'] == 'TRUE' ? true : false,
-                            row['CONTATO'],
-                            row['STATUS'],
-                            row['FUNÇÃO'],
-                            row['CPF'],
-                            row['E-MAIL'],
-                            row['E-MAIL INSTITUCIONAL'],
-                            date,
-                            row['SITUAÇÃO - DOCUMENTOS'],
-                            row['OBSERVAÇÕES']
-                        );
-                        colaborators.push(colaborator);
+
+                            const date = new Date(year + '-' + month + '-' + day);
+                            const colaborator = new Colaborator(
+                                row['NOME'],
+                                row['SETOR'],
+                                row['ESCALA'],
+                                row['FEIRISTA'] == 'TRUE' ? true : false,
+                                row['TEMPORARIO'] == 'TRUE' ? true : false,
+                                row['CONTATO'],
+                                row['STATUS'],
+                                row['FUNÇÃO'],
+                                row['CPF'],
+                                row['E-MAIL'],
+                                row['E-MAIL INSTITUCIONAL'],
+                                date,
+                                row['SITUAÇÃO - DOCUMENTOS'],
+                                row['OBSERVAÇÕES']
+                            );
+                            colaborators.push(colaborator);
+                        } 
+                    }else {
+                        if (row['NOME'] && row['DATA - ADMISSÃO'] == date) {
+                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+
+                            const date = new Date(year + '-' + month + '-' + day);
+                            const colaborator = new Colaborator(
+                                row['NOME'],
+                                row['SETOR'],
+                                row['ESCALA'],
+                                row['FEIRISTA'] == 'TRUE' ? true : false,
+                                row['TEMPORARIO'] == 'TRUE' ? true : false,
+                                row['CONTATO'],
+                                row['STATUS'],
+                                row['FUNÇÃO'],
+                                row['CPF'],
+                                row['E-MAIL'],
+                                row['E-MAIL INSTITUCIONAL'],
+                                date,
+                                row['SITUAÇÃO - DOCUMENTOS'],
+                                row['OBSERVAÇÕES']
+                            );
+                            colaborators.push(colaborator);
+                        }
                     }
                 });
+
+                if(!colaborators.length){
+                    res.status(404).json('COLABORATORS NOT FOUND!');
+                    return;
+                }
 
                 res.status(200).json(colaborators);
                 return;
@@ -81,8 +114,8 @@ router.get('/colaborators/:name/:doc', async (req, res) => {
                             const day = row['DATA - ADMISSÃO'].substring(0, 2);
                             const month = row['DATA - ADMISSÃO'].substring(3, 5);
                             const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
-                            
-                            const date = new Date(year+'-'+month+'-'+day);
+
+                            const date = new Date(year + '-' + month + '-' + day);
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
@@ -139,14 +172,17 @@ router.get('/mail/colaborators/:doc', async (req, res) => {
 
             sheet.getRows().then((rows) => {
                 rows.map((row) => {
-                    if(!empty){
-                        if(row['DATA - ADMISSÃO'] == date && row['E-MAIL INSTITUCIONAL'] && row['NOME'] || !date && row['E-MAIL INSTITUCIONAL'] && row['NOME']){
+                    if (!empty) {
+                        if (
+                            (row['DATA - ADMISSÃO'] == date && row['E-MAIL INSTITUCIONAL'] && row['NOME']) ||
+                            (!date && row['E-MAIL INSTITUCIONAL'] && row['NOME'])
+                        ) {
                             const day = row['DATA - ADMISSÃO'].substring(0, 2);
                             const month = row['DATA - ADMISSÃO'].substring(3, 5);
                             const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
-                            
-                            const date = new Date(year+'-'+month+'-'+day);
-    
+
+                            const date = new Date(year + '-' + month + '-' + day);
+
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
@@ -164,17 +200,18 @@ router.get('/mail/colaborators/:doc', async (req, res) => {
                                 row['OBSERVAÇÕES']
                             );
                             colaborators.push(colaborator);
-
                         }
-                    }else{
-                        if(row['DATA - ADMISSÃO'] == date && !row['E-MAIL INSTITUCIONAL'] && row['TEMPORARIO'] != 'TRUE' && row['NOME'] || !date && !row['E-MAIL INSTITUCIONAL'] && row['TEMPORARIO'] != 'TRUE' && row['NOME']){
+                    } else {
+                        if (
+                            (row['DATA - ADMISSÃO'] == date && !row['E-MAIL INSTITUCIONAL'] && row['TEMPORARIO'] != 'TRUE' && row['NOME']) ||
+                            (!date && !row['E-MAIL INSTITUCIONAL'] && row['TEMPORARIO'] != 'TRUE' && row['NOME'])
+                        ) {
                             const day = row['DATA - ADMISSÃO'].substring(0, 2);
                             const month = row['DATA - ADMISSÃO'].substring(3, 5);
                             const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
-                            
-                            const date = new Date(year+'-'+month+'-'+day);
 
-    
+                            const date = new Date(year + '-' + month + '-' + day);
+
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
@@ -192,18 +229,16 @@ router.get('/mail/colaborators/:doc', async (req, res) => {
                                 row['OBSERVAÇÕES']
                             );
                             colaborators.push(colaborator);
-
                         }
                     }
-
                 });
 
-                if(!colaborators.length){
+                if (!colaborators.length) {
                     res.status(404).json('COLABORATORS NOT FOUND');
                     return;
                 }
 
-                if(template == 'true') {
+                if (template == 'true') {
                     let message = '';
                     colaborators.forEach((colaborator) => {
                         message =
