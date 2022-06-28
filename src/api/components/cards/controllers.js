@@ -5,6 +5,8 @@ const path = require('path');
 const ejs = require('ejs');
 const fs = require('fs');
 
+const pdf = require('html-pdf');
+
 const router = express.Router();
 
 router.get('/archives/card/:name/:doc', async (req, res) => {
@@ -30,18 +32,24 @@ router.get('/archives/card/:name/:doc', async (req, res) => {
                 if (name) {
                     rows.map((row) => {
                         if (row['NOME'].toUpperCase() == name.toUpperCase()) {
+                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+
+                            const date = new Date(year + '-' + month + '-' + day);
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
                                 row['ESCALA'],
                                 row['FEIRISTA'] == 'TRUE' ? true : false,
+                                row['TEMPORARIO'] == 'TRUE' ? true : false,
                                 row['CONTATO'],
                                 row['STATUS'],
                                 row['FUNÇÃO'],
                                 row['CPF'],
                                 row['E-MAIL'],
                                 row['E-MAIL INSTITUCIONAL'],
-                                new Date(row['DATA - ADMISSÃO']),
+                                date,
                                 row['SITUAÇÃO - DOCUMENTOS'],
                                 row['OBSERVAÇÕES']
                             );
@@ -92,8 +100,6 @@ router.get('/archives/cards/:doc', async (req, res) => {
         return;
     }
 
-    
-
     try {
         getDoc(docId).then(async (doc) => {
             const sheet = doc.sheetsByIndex[0];
@@ -103,18 +109,24 @@ router.get('/archives/cards/:doc', async (req, res) => {
                 if (date) {
                     rows.map((row) => {
                         if (row['DATA - ADMISSÃO'] == date) {
+                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+
+                            const date = new Date(year + '-' + month + '-' + day);
                             const colaborator = new Colaborator(
                                 row['NOME'],
                                 row['SETOR'],
                                 row['ESCALA'],
                                 row['FEIRISTA'] == 'TRUE' ? true : false,
+                                row['TEMPORARIO'] == 'TRUE' ? true : false,
                                 row['CONTATO'],
                                 row['STATUS'],
                                 row['FUNÇÃO'],
                                 row['CPF'],
                                 row['E-MAIL'],
                                 row['E-MAIL INSTITUCIONAL'],
-                                new Date(row['DATA - ADMISSÃO']),
+                                date,
                                 row['SITUAÇÃO - DOCUMENTOS'],
                                 row['OBSERVAÇÕES']
                             );
@@ -131,11 +143,23 @@ router.get('/archives/cards/:doc', async (req, res) => {
                     if (!fs.existsSync(dateDirectoryPath)) {
                         fs.mkdirSync(dateDirectoryPath);
                     }
-                    colaborators.forEach((colaborator, index) => {
+                    colaborators.forEach(async (colaborator, index) => {
                         const template = fs.readFileSync(filePath, 'utf-8');
                         const html = ejs.render(template, { colaborator: colaborator });
 
                         fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
+
+                        const options = {
+                            format: 'Letter',
+                        };
+
+                        pdf.create(html, options).toFile(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), (error, response) => {
+                            if(!error){
+                                console.log('pdf generated');
+                            }else{
+                                return res.status(500).json('FAIL IN GENERATE PDF');
+                            }
+                        });
                     });
                     return res.send('CRIADO COM SUCESSO!');
                 } else {
