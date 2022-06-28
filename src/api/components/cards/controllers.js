@@ -4,6 +4,7 @@ const { getDoc } = require('../../services/spreadSheet');
 const path = require('path');
 const ejs = require('ejs');
 const fs = require('fs');
+const puppeteer = require("puppeteer");
 
 const pdf = require('html-pdf');
 
@@ -187,6 +188,25 @@ router.get('/cleaner', async (req, res) => {
         console.log(err);
         return res.status(500).json('SEVER ERROR');
     }
+});
+
+router.get('/pdf', (req, res) => {
+    const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
+
+    const printPDF = async ()=>{
+        const browser = await puppeteer.launch({headless: true});
+        const page =  await browser.newPage();
+        await page.goto('https://google.com', {waitUntil: 'networkidle0'});
+        const pdf = await page.pdf({format: 'A4'});
+        await browser.close();
+
+        return pdf;
+    };
+
+    printPDF().then(pdf => {
+        res.set({ 'Content-Type': 'application/pdf', 'Content-Length': pdf.length });
+        res.send(pdf);
+    })
 });
 
 module.exports = router;
