@@ -4,10 +4,7 @@ const { getDoc } = require('../../services/spreadSheet');
 const path = require('path');
 const ejs = require('ejs');
 const fs = require('fs');
-const puppeteer = require("puppeteer");
 const generatePDF = require("../../middleware/generatePDF");
-
-const pdf = require('html-pdf');
 
 const router = express.Router();
 
@@ -149,7 +146,10 @@ router.get('/archives/cards/:doc', async (req, res) => {
                         const template = fs.readFileSync(filePath, 'utf-8');
                         const html = ejs.render(template, { colaborator: colaborator });
 
-                        fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
+                        // fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
+
+                        const pdf = await generatePDF(html);
+                        fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
 
                     });
                     return res.send('CRIADO COM SUCESSO!');
@@ -190,10 +190,6 @@ router.get('/pdf', async (req, res) => {
 
     res.status(200).json('ih');
 
-    // printPDF().then(pdf => {
-    //     res.set({ 'Content-Type': 'application/pdf', 'Content-Length': pdf.length });
-    //     res.send(pdf);
-    // })
 });
 
 module.exports = router;
