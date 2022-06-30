@@ -7,7 +7,7 @@ const fs = require('fs');
 const generatePDF = require('../../middleware/generatePDF');
 const listFiles = require('../../middleware/listFiles');
 const merge = require('easy-pdf-merge');
-const mergePDF = require("../../middleware/mergePDF");
+const mergePDF = require('../../middleware/mergePDF');
 
 const router = express.Router();
 
@@ -88,8 +88,6 @@ router.get('/archives/cards/:doc', async (req, res) => {
     const docId = req.params.doc;
     const date = req.query.date;
     let colaborators = [];
-    let pdfFiles = [];
-
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
     const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
     if (!date) {
@@ -104,86 +102,112 @@ router.get('/archives/cards/:doc', async (req, res) => {
     }
 
     try {
-        getDoc(docId).then(async (doc) => {
-            const sheet = doc.sheetsByIndex[0];
-            console.log(`SHEET NAME: ${sheet.title}`);
+        getDoc(docId)
+            .then(async (doc) => {
+                const sheet = doc.sheetsByIndex[0];
+                console.log(`SHEET NAME: ${sheet.title}`);
 
-            sheet.getRows().then(async (rows) => {
-                if (date) {
-                    rows.map((row) => {
-                        if (row['DATA - ADMISSÃO'] == date) {
-                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
-                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
-                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+                sheet.getRows().then(async (rows) => {
+                    if (date) {
+                        rows.map((row) => {
+                            if (row['DATA - ADMISSÃO'] == date) {
+                                const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                                const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                                const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
 
-                            const date = new Date(year + '-' + month + '-' + day);
-                            const colaborator = new Colaborator(
-                                row['NOME'],
-                                row['SETOR'],
-                                row['ESCALA'],
-                                row['FEIRISTA'] == 'TRUE' ? true : false,
-                                row['TEMPORARIO'] == 'TRUE' ? true : false,
-                                row['CONTATO'],
-                                row['STATUS'],
-                                row['FUNÇÃO'],
-                                row['CPF'],
-                                row['E-MAIL'],
-                                row['E-MAIL INSTITUCIONAL'],
-                                date,
-                                row['SITUAÇÃO - DOCUMENTOS'],
-                                row['OBSERVAÇÕES']
-                            );
-                            colaborators.push(colaborator);
+                                const date = new Date(year + '-' + month + '-' + day);
+                                const colaborator = new Colaborator(
+                                    row['NOME'],
+                                    row['SETOR'],
+                                    row['ESCALA'],
+                                    row['FEIRISTA'] == 'TRUE' ? true : false,
+                                    row['TEMPORARIO'] == 'TRUE' ? true : false,
+                                    row['CONTATO'],
+                                    row['STATUS'],
+                                    row['FUNÇÃO'],
+                                    row['CPF'],
+                                    row['E-MAIL'],
+                                    row['E-MAIL INSTITUCIONAL'],
+                                    date,
+                                    row['SITUAÇÃO - DOCUMENTOS'],
+                                    row['OBSERVAÇÕES']
+                                );
+                                colaborators.push(colaborator);
+                            }
+                        });
+                        if (!colaborators.length) {
+                            res.status(404).json('COLABORATORS NOT FOUND');
+                            return;
                         }
-                    });
-                    if (!colaborators.length) {
-                        res.status(404).json('COLABORATORS NOT FOUND');
+                        if (!fs.existsSync(downloadsPath)) {
+                            fs.mkdirSync(downloadsPath);
+                        }
+                        if (!fs.existsSync(dateDirectoryPath)) {
+                            fs.mkdirSync(dateDirectoryPath);
+                        }
+                        colaborators.forEach(async (colaborator, index) => {
+                            const template = fs.readFileSync(filePath, 'utf-8');
+                            const html = ejs.render(template, { colaborator: colaborator });
+
+                            // fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
+
+                            const pdf = await generatePDF(html);
+                            fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
+                        });
+
+                        // const files = await listFiles(dateDirectoryPath);
+                        // const merged = await mergePDF(files, dateDirectoryPath);
+                        // res.send(merged);
+                        // return res.send(files)
+
+                        // await merge(files, path.join(dateDirectoryPath, `output.pdf`), async (err) => {
+                        //     if (err){
+                        //         console.log(err);
+                        //         return res.status(500).json("Error in generate pdf file");
+                        //     }
+                        //     console.log('Successfully merged!');
+                        //     return res.status(200).json('PDF generated sucessfully');
+                        //     // res.set({ 'Content-Type': 'application/pdf', 'Content-Length': mergedPDF.length });
+                        //     // return res.send(mergedPDF);
+                        // });
+
+                        return res.status(201).json({message: 'Created sucessfully', status: 201});
+                    } else {
+                        res.status(504).json({message: 'Enter date', status: 504});
                         return;
                     }
-                    if (!fs.existsSync(downloadsPath)) {
-                        fs.mkdirSync(downloadsPath);
-                    }
-                    if (!fs.existsSync(dateDirectoryPath)) {
-                        fs.mkdirSync(dateDirectoryPath);
-                    }
-                    colaborators.forEach(async (colaborator, index) => {
-                        const template = fs.readFileSync(filePath, 'utf-8');
-                        const html = ejs.render(template, { colaborator: colaborator });
-
-                        // fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
-
-                        const pdf = await generatePDF(html);
-                        fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
-                    });
-
-                    const files = await listFiles(dateDirectoryPath);
-                    const merged = await mergePDF(files, dateDirectoryPath);
-                    res.send(merged);
-                    // return res.send(files)
-
-                    // await merge(files, path.join(dateDirectoryPath, `output.pdf`), async (err) => {
-                    //     if (err){
-                    //         console.log(err);
-                    //         return res.status(500).json("Error in generate pdf file");
-                    //     }
-                    //     console.log('Successfully merged!');
-                    //     return res.status(200).json('PDF generated sucessfully');
-                    //     // res.set({ 'Content-Type': 'application/pdf', 'Content-Length': mergedPDF.length });
-                    //     // return res.send(mergedPDF);
-                    // });
-                    
-
-                    // return res.send('CRIADO COM SUCESSO!');
-                } else {
-                    res.status(400).json('ENTER WITH VALID DATE');
-                    return;
-                }
+                });
             });
-        });
     } catch (err) {
         console.log(err);
         res.status(500).json('SERVER ERROR');
     }
+});
+
+router.get('/archives/download', async (req, res) =>{
+    console.log('access - http://localhost:3000/archives/download');
+    const date = req.query.date;
+    
+    if(!date){
+        return res.status(504).json({message: 'Enter with valid date', status: 504});
+    }
+
+    const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
+    const dateDirectoryPath = path.join(downloadsPath, date.replace(/[/]/g, '-'));
+
+    if (!fs.existsSync(dateDirectoryPath)) {
+        return res.status(404).json({message: 'Files not found', status: 404});
+    }
+
+    const files = await listFiles(dateDirectoryPath);
+    const merged = await mergePDF(files, dateDirectoryPath);
+    const pdfMerged = fs.readFileSync(merged);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Length': pdfMerged.length });
+    res.set("Content-Disposition", `attachment;filename=merged_${date.replace(/[/]/g, '-')}.pdf`);
+    res.set("Content-Type", "application/octet-stream");
+    return res.status(200).send(pdfMerged);
+
+
 });
 
 router.get('/cleaner', async (req, res) => {
@@ -191,13 +215,13 @@ router.get('/cleaner', async (req, res) => {
         const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
         if (fs.existsSync(downloadsPath)) {
             fs.rmSync(downloadsPath, { recursive: true, force: true });
-            return res.status(200).json('REMOVED ALL FILES!');
+            return res.status(200).json({message: 'Removed all files', status: 200});
         }
 
-        return res.status(400).json('DONT HAVE FILES');
+        return res.status(404).json({message: 'Files not found', status: 404});
     } catch (err) {
         console.log(err);
-        return res.status(500).json('SEVER ERROR');
+        return res.status(500).json({message: 'Internal server error', status: 500});
     }
 });
 

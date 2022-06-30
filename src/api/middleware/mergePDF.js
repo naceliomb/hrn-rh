@@ -2,7 +2,7 @@ const { PDFDocument } = require('pdf-lib');
 const path = require('path');
 const fs = require('fs');
 
-async function mergePDF(paths = [], pathOutput) {
+const mergePDF = async(paths = [], pathOutput) => {
     const doc = await PDFDocument.create();
     let docs = [];
     for (let i = 0; i < paths.length; i++) {
