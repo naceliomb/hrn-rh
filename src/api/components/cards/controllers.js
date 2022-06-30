@@ -4,7 +4,10 @@ const { getDoc } = require('../../services/spreadSheet');
 const path = require('path');
 const ejs = require('ejs');
 const fs = require('fs');
-const generatePDF = require("../../middleware/generatePDF");
+const generatePDF = require('../../middleware/generatePDF');
+const listFiles = require('../../middleware/listFiles');
+const merge = require('easy-pdf-merge');
+const mergePDF = require("../../middleware/mergePDF");
 
 const router = express.Router();
 
@@ -85,6 +88,7 @@ router.get('/archives/cards/:doc', async (req, res) => {
     const docId = req.params.doc;
     const date = req.query.date;
     let colaborators = [];
+    let pdfFiles = [];
 
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
     const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
@@ -104,7 +108,7 @@ router.get('/archives/cards/:doc', async (req, res) => {
             const sheet = doc.sheetsByIndex[0];
             console.log(`SHEET NAME: ${sheet.title}`);
 
-            sheet.getRows().then((rows) => {
+            sheet.getRows().then(async (rows) => {
                 if (date) {
                     rows.map((row) => {
                         if (row['DATA - ADMISSÃO'] == date) {
@@ -150,9 +154,26 @@ router.get('/archives/cards/:doc', async (req, res) => {
 
                         const pdf = await generatePDF(html);
                         fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
-
                     });
-                    return res.send('CRIADO COM SUCESSO!');
+
+                    const files = await listFiles(dateDirectoryPath);
+                    const merged = await mergePDF(files, dateDirectoryPath);
+                    res.send(merged);
+                    // return res.send(files)
+
+                    // await merge(files, path.join(dateDirectoryPath, `output.pdf`), async (err) => {
+                    //     if (err){
+                    //         console.log(err);
+                    //         return res.status(500).json("Error in generate pdf file");
+                    //     }
+                    //     console.log('Successfully merged!');
+                    //     return res.status(200).json('PDF generated sucessfully');
+                    //     // res.set({ 'Content-Type': 'application/pdf', 'Content-Length': mergedPDF.length });
+                    //     // return res.send(mergedPDF);
+                    // });
+                    
+
+                    // return res.send('CRIADO COM SUCESSO!');
                 } else {
                     res.status(400).json('ENTER WITH VALID DATE');
                     return;
@@ -178,18 +199,6 @@ router.get('/cleaner', async (req, res) => {
         console.log(err);
         return res.status(500).json('SEVER ERROR');
     }
-});
-
-router.get('/pdf', async (req, res) => {
-    const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
-    const pdfPath = fs.readFileSync(path.join(downloadsPath, "06-07-2022", "ARCANJA GABRIELA DA SILVA PAIVA.html"), 'utf-8');
-
-    
-    const pdf = await generatePDF(pdfPath);
-    fs.writeFileSync("output.pdf", pdf,'binary');
-
-    res.status(200).json('ih');
-
 });
 
 module.exports = router;
