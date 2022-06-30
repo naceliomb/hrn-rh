@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer');
 
 const generatePDF = async (content) => {
     console.log(`pass generatePDF `);
+    
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
     // await page.goto('https://google.com', {waitUntil: 'networkidle0'});
