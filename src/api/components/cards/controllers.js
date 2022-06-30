@@ -6,7 +6,6 @@ const ejs = require('ejs');
 const fs = require('fs');
 const generatePDF = require('../../middleware/generatePDF');
 const listFiles = require('../../middleware/listFiles');
-const merge = require('easy-pdf-merge');
 const mergePDF = require('../../middleware/mergePDF');
 
 const router = express.Router();
@@ -154,22 +153,6 @@ router.get('/archives/cards/:doc', async (req, res) => {
                             const pdf = await generatePDF(html);
                             fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
                         });
-
-                        // const files = await listFiles(dateDirectoryPath);
-                        // const merged = await mergePDF(files, dateDirectoryPath);
-                        // res.send(merged);
-                        // return res.send(files)
-
-                        // await merge(files, path.join(dateDirectoryPath, `output.pdf`), async (err) => {
-                        //     if (err){
-                        //         console.log(err);
-                        //         return res.status(500).json("Error in generate pdf file");
-                        //     }
-                        //     console.log('Successfully merged!');
-                        //     return res.status(200).json('PDF generated sucessfully');
-                        //     // res.set({ 'Content-Type': 'application/pdf', 'Content-Length': mergedPDF.length });
-                        //     // return res.send(mergedPDF);
-                        // });
 
                         return res.status(201).json({message: 'Created sucessfully', status: 201});
                     } else {
