@@ -134,7 +134,6 @@ router.get('/archives/cards/:doc', async (req, res) => {
                                 row['OBSERVAÇÕES']
                             );
                             colaborators.push(colaborator);
-                            
                         }
                     });
                     if (!colaborators.length) {
@@ -248,40 +247,70 @@ router.get('/archives/heroku/:doc', async (req, res) => {
             const sheet = doc.sheetsByIndex[0];
             console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
 
-            const listColaborators = sheet.getRows().then((rows) => {
-                let colaborators = [];
-                rows.map((row) => {
-                    if (row['DATA - ADMISSÃO'] == date) {
-                        const day = row['DATA - ADMISSÃO'].substring(0, 2);
-                        const month = row['DATA - ADMISSÃO'].substring(3, 5);
-                        const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+            const rows = sheet.getRows();
+            // .then((rows) => {
+            //     let colaborators = [];
+            //     rows.map((row) => {
+            //         if (row['DATA - ADMISSÃO'] == date) {
+            //             const day = row['DATA - ADMISSÃO'].substring(0, 2);
+            //             const month = row['DATA - ADMISSÃO'].substring(3, 5);
+            //             const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
 
-                        const dateAd = new Date(year + '-' + month + '-' + day);
+            //             const dateAd = new Date(year + '-' + month + '-' + day);
 
-                        const colaborator = new Colaborator(
-                            row['NOME'],
-                            row['SETOR'],
-                            row['ESCALA'],
-                            row['FEIRISTA'] == 'TRUE' ? true : false,
-                            row['TEMPORARIO'] == 'TRUE' ? true : false,
-                            row['CONTATO'],
-                            row['STATUS'],
-                            row['FUNÇÃO'],
-                            row['CPF'],
-                            row['E-MAIL'],
-                            row['E-MAIL INSTITUCIONAL'],
-                            dateAd,
-                            row['SITUAÇÃO - DOCUMENTOS'],
-                            row['OBSERVAÇÕES']
-                        );
-                        console.log(`COLABORATOR: ${colaborator.name} Added`);
-                        colaborators.push(colaborator)
+            //             const colaborator = new Colaborator(
+            //                 row['NOME'],
+            //                 row['SETOR'],
+            //                 row['ESCALA'],
+            //                 row['FEIRISTA'] == 'TRUE' ? true : false,
+            //                 row['TEMPORARIO'] == 'TRUE' ? true : false,
+            //                 row['CONTATO'],
+            //                 row['STATUS'],
+            //                 row['FUNÇÃO'],
+            //                 row['CPF'],
+            //                 row['E-MAIL'],
+            //                 row['E-MAIL INSTITUCIONAL'],
+            //                 dateAd,
+            //                 row['SITUAÇÃO - DOCUMENTOS'],
+            //                 row['OBSERVAÇÕES']
+            //             );
+            //             console.log(`COLABORATOR: ${colaborator.name} Added`);
+            //             colaborators.push(colaborator)
 
-                    }
-                });
-                return colaborators;
+            //         }
+            //     });
+            //     return res.send(colaborators);;
+            // });
+
+            const colaborators = rows.map((row) => {
+                if (row['DATA - ADMISSÃO'] == date) {
+                    const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                    const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                    const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+
+                    const dateAd = new Date(year + '-' + month + '-' + day);
+
+                    const colaborator = new Colaborator(
+                        row['NOME'],
+                        row['SETOR'],
+                        row['ESCALA'],
+                        row['FEIRISTA'] == 'TRUE' ? true : false,
+                        row['TEMPORARIO'] == 'TRUE' ? true : false,
+                        row['CONTATO'],
+                        row['STATUS'],
+                        row['FUNÇÃO'],
+                        row['CPF'],
+                        row['E-MAIL'],
+                        row['E-MAIL INSTITUCIONAL'],
+                        dateAd,
+                        row['SITUAÇÃO - DOCUMENTOS'],
+                        row['OBSERVAÇÕES']
+                    );
+                    return colaborator;
+                }
             });
-            res.send(listColaborators);
+
+            return res.send(colaborators);
         });
 
         // colaborators.forEach(async (colaborator) => {
@@ -294,8 +323,6 @@ router.get('/archives/heroku/:doc', async (req, res) => {
         // });
 
         // return res.status(201).json({ message: 'created' });
-
-        
     } catch (e) {
         console.log(e);
         return res.status(503).json({ message: 'Server Error' });
