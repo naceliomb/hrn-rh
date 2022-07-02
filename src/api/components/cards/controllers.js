@@ -83,6 +83,8 @@ router.get('/archives/card/:name/:doc', async (req, res) => {
 });
 
 router.get('/archives/cards/:doc', async (req, res) => {
+    const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+    console.log(fullUrl);
     const docId = req.params.doc;
     const date = req.query.date;
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
@@ -100,6 +102,7 @@ router.get('/archives/cards/:doc', async (req, res) => {
         res.status(400).json({ message: 'Enter with valid date' });
         return;
     }
+    const dateDirectoryPath = path.join(downloadsPath, date.replace(/[/]/g, '-'));
 
     if (!fs.existsSync(dateDirectoryPath)) {
         fs.mkdirSync(dateDirectoryPath);
@@ -160,6 +163,8 @@ router.get('/archives/cards/:doc', async (req, res) => {
 });
 
 router.get('/archives/heroku/:doc', async (req, res) => {
+    const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+    console.log(fullUrl);
     const docId = req.params.doc;
     const date = req.query.date;
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
@@ -177,6 +182,7 @@ router.get('/archives/heroku/:doc', async (req, res) => {
         res.status(400).json({ message: 'Enter with valid date' });
         return;
     }
+    const dateDirectoryPath = path.join(downloadsPath, date.replace(/[/]/g, '-'));
 
     if (!fs.existsSync(dateDirectoryPath)) {
         fs.mkdirSync(dateDirectoryPath);
