@@ -83,93 +83,79 @@ router.get('/archives/card/:name/:doc', async (req, res) => {
 });
 
 router.get('/archives/cards/:doc', async (req, res) => {
-    const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-    console.log(fullUrl);
     const docId = req.params.doc;
     const date = req.query.date;
-    const format = req.query.format;
-
-    let colaborators = [];
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
     const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
-    if (!date) {
-        res.status(400).json('Enter date!');
-        return;
+
+    if (!fs.existsSync(downloadsPath)) {
+        fs.mkdirSync(downloadsPath);
     }
-    const dateDirectoryPath = path.join(downloadsPath, date.replace(/[/]/g, '-'));
 
     if (!docId) {
-        res.status(400).json('INVALID DOC ID');
+        res.status(400).json({ message: 'Enter with valid Doc Id' });
         return;
+    }
+    if (!date) {
+        res.status(400).json({ message: 'Enter with valid date' });
+        return;
+    }
+
+    if (!fs.existsSync(dateDirectoryPath)) {
+        fs.mkdirSync(dateDirectoryPath);
     }
 
     try {
-        getDoc(docId).then(async (doc) => {
-            const sheet = doc.sheetsByIndex[0];
-            console.log(`SHEET NAME: ${sheet.title}`);
+        const doc = await getDoc(docId);
+        const sheet = doc.sheetsByIndex[0];
+        console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
 
-            sheet.getRows().then(async (rows) => {
-                if (date) {
-                    rows.map((row) => {
-                        if (row['DATA - ADMISSÃO'] == date) {
-                            const day = row['DATA - ADMISSÃO'].substring(0, 2);
-                            const month = row['DATA - ADMISSÃO'].substring(3, 5);
-                            const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+        const rows = await sheet.getRows();
+        const colaboratorsData = rows.map((row) => {
+            if (row['DATA - ADMISSÃO'] == date) {
+                const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
 
-                            const date = new Date(year + '-' + month + '-' + day);
-                            const colaborator = new Colaborator(
-                                row['NOME'],
-                                row['SETOR'],
-                                row['ESCALA'],
-                                row['FEIRISTA'] == 'TRUE' ? true : false,
-                                row['TEMPORARIO'] == 'TRUE' ? true : false,
-                                row['CONTATO'],
-                                row['STATUS'],
-                                row['FUNÇÃO'],
-                                row['CPF'],
-                                row['E-MAIL'],
-                                row['E-MAIL INSTITUCIONAL'],
-                                date,
-                                row['SITUAÇÃO - DOCUMENTOS'],
-                                row['OBSERVAÇÕES']
-                            );
-                            colaborators.push(colaborator);
-                        }
-                    });
-                    if (!colaborators.length) {
-                        res.status(404).json('COLABORATORS NOT FOUND');
-                        return;
-                    }
-                    if (!fs.existsSync(downloadsPath)) {
-                        fs.mkdirSync(downloadsPath);
-                    }
-                    if (!fs.existsSync(dateDirectoryPath)) {
-                        fs.mkdirSync(dateDirectoryPath);
-                    }
-                    colaborators.forEach(async (colaborator, index) => {
-                        console.log(`COLABORATOR: ${colaborator.name}`);
-                        const template = fs.readFileSync(filePath, 'utf-8');
-                        const html = ejs.render(template, { colaborator: colaborator });
-                        if (format == html) {
-                            console.log('FORMAT: HTML');
-                            fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
-                        } else {
-                            console.log('FORMAT: PDF');
-                            const pdf = await generatePDF(html);
-                            fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
-                        }
-                    });
+                const dateAd = new Date(year + '-' + month + '-' + day);
 
-                    return res.status(201).json({ message: 'Created sucessfully', status: 201 });
-                } else {
-                    res.status(504).json({ message: 'Enter date', status: 504 });
-                    return;
-                }
-            });
+                const colaborator = new Colaborator(
+                    row['NOME'],
+                    row['SETOR'],
+                    row['ESCALA'],
+                    row['FEIRISTA'] == 'TRUE' ? true : false,
+                    row['TEMPORARIO'] == 'TRUE' ? true : false,
+                    row['CONTATO'],
+                    row['STATUS'],
+                    row['FUNÇÃO'],
+                    row['CPF'],
+                    row['E-MAIL'],
+                    row['E-MAIL INSTITUCIONAL'],
+                    dateAd,
+                    row['SITUAÇÃO - DOCUMENTOS'],
+                    row['OBSERVAÇÕES']
+                );
+                return colaborator;
+            }
         });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json('SERVER ERROR');
+
+        const colaborators = colaboratorsData.filter((el) => {
+            return el != null;
+        });
+
+        for (const colaborator of colaborators) {
+            console.log(`Criando ficha do colaborador: ${colaborator.name}`);
+            const template = fs.readFileSync(filePath, 'utf-8');
+            const html = ejs.render(template, { colaborator: colaborator });
+
+            const pdf = await generatePDF(html);
+            fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
+        }
+
+        return res.status(201).json({ message: 'Created' });
+    } catch (e) {
+        console.log(e);
+        return res.status(503).json({ message: 'Server Error' });
     }
 });
 
@@ -190,6 +176,10 @@ router.get('/archives/heroku/:doc', async (req, res) => {
     if (!date) {
         res.status(400).json({ message: 'Enter with valid date' });
         return;
+    }
+
+    if (!fs.existsSync(dateDirectoryPath)) {
+        fs.mkdirSync(dateDirectoryPath);
     }
 
     try {
@@ -236,12 +226,10 @@ router.get('/archives/heroku/:doc', async (req, res) => {
             const html = ejs.render(template, { colaborator: colaborator });
 
             const pdf = await generatePDF(html);
-            fs.writeFileSync(path.join(downloadsPath, `${colaborator.name}.pdf`), pdf, 'binary');
+            fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
         }
 
-        return res.status(201).json({message: 'Created'});
-
-        
+        return res.status(201).json({ message: 'Created' });
     } catch (e) {
         console.log(e);
         return res.status(503).json({ message: 'Server Error' });
