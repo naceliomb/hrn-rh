@@ -246,12 +246,12 @@ router.get('/archives/heroku/:doc', async (req, res) => {
     }
 
     try {
-        getDoc(docId).then((doc, colaborators) => {
+        getDoc(docId).then((doc) => {
             const sheet = doc.sheetsByIndex[0];
             console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
 
-            sheet.getRows().then((rows, colaborators) => {
-                rows.map((row, colaborators) => {
+            sheet.getRows().then((rows) => {
+                rows.map((row) => {
                     if (row['DATA - ADMISSÃO'] == date) {
                         const day = row['DATA - ADMISSÃO'].substring(0, 2);
                         const month = row['DATA - ADMISSÃO'].substring(3, 5);
