@@ -152,9 +152,10 @@ router.get('/archives/cards/:doc', async (req, res) => {
                             const template = fs.readFileSync(filePath, 'utf-8');
                             const html = ejs.render(template, { colaborator: colaborator });
                             if(format == html){
+                                console.log('FORMAT: HTML');
                                 fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
-                                console.log('html');
                             }else{
+                                console.log('FORMAT: PDF');
                                 const pdf = await generatePDF(html);
                                 fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
                             }
