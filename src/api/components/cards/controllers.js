@@ -134,6 +134,7 @@ router.get('/archives/cards/:doc', async (req, res) => {
                                 row['OBSERVAÇÕES']
                             );
                             colaborators.push(colaborator);
+                            
                         }
                     });
                     if (!colaborators.length) {
@@ -275,11 +276,12 @@ router.get('/archives/heroku/:doc', async (req, res) => {
                             row['SITUAÇÃO - DOCUMENTOS'],
                             row['OBSERVAÇÕES']
                         );
-                        
+                        console.log(`COLABORATOR: ${colaborator.name} Added`);
                         colaborators.push(colaborator)
 
                     }
                 });
+                return res.send(colaborators);
             });
         });
 
@@ -294,7 +296,7 @@ router.get('/archives/heroku/:doc', async (req, res) => {
 
         // return res.status(201).json({ message: 'created' });
 
-        return res.send(colaborators)
+        
     } catch (e) {
         console.log(e);
         return res.status(503).json({ message: 'Server Error' });
