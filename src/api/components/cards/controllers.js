@@ -227,9 +227,6 @@ router.get('/archives/heroku/:doc', async (req, res) => {
     //         comments: 'Encaminhar Link Integração',
     //     },
     // ];
-
-    let colaborators = [];
-
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
     const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
 
@@ -251,7 +248,8 @@ router.get('/archives/heroku/:doc', async (req, res) => {
             const sheet = doc.sheetsByIndex[0];
             console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
 
-            sheet.getRows().then((rows) => {
+            const listColaborators = sheet.getRows().then((rows) => {
+                let colaborators = [];
                 rows.map((row) => {
                     if (row['DATA - ADMISSÃO'] == date) {
                         const day = row['DATA - ADMISSÃO'].substring(0, 2);
@@ -281,8 +279,9 @@ router.get('/archives/heroku/:doc', async (req, res) => {
 
                     }
                 });
-                return res.send(colaborators);
+                return colaborators;
             });
+            res.send(listColaborators);
         });
 
         // colaborators.forEach(async (colaborator) => {
