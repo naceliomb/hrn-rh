@@ -249,6 +249,7 @@ router.get('/archives/heroku/:doc', async (req, res) => {
                         row['SITUAÇÃO - DOCUMENTOS'],
                         row['OBSERVAÇÕES']
                     );
+                    return colaborator;
                 }
 
             })
