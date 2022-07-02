@@ -7,6 +7,7 @@ const fs = require('fs');
 const generatePDF = require('../../middleware/generatePDF');
 const listFiles = require('../../middleware/listFiles');
 const mergePDF = require('../../middleware/mergePDF');
+const { AsyncLocalStorage } = require('async_hooks');
 
 const router = express.Router();
 
@@ -243,11 +244,11 @@ router.get('/archives/heroku/:doc', async (req, res) => {
     }
 
     try {
-        getDoc(docId).then((doc) => {
+        getDoc(docId).then(async (doc) => {
             const sheet = doc.sheetsByIndex[0];
             console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
 
-            const rows = sheet.getRows();
+            const rows = await sheet.getRows();
             // .then((rows) => {
             //     let colaborators = [];
             //     rows.map((row) => {
@@ -282,7 +283,7 @@ router.get('/archives/heroku/:doc', async (req, res) => {
             //     return res.send(colaborators);;
             // });
 
-            const colaborators = rows.map((row) => {
+            let newValues = rows.map((row) => {
                 if (row['DATA - ADMISSÃO'] == date) {
                     const day = row['DATA - ADMISSÃO'].substring(0, 2);
                     const month = row['DATA - ADMISSÃO'].substring(3, 5);
@@ -309,8 +310,69 @@ router.get('/archives/heroku/:doc', async (req, res) => {
                     return colaborator;
                 }
             });
+            console.log(newValues);
 
-            return res.send(colaborators);
+            let newValues2 = rows.filter((row) =>  {
+                if (row['DATA - ADMISSÃO'] == date) {
+                    const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                    const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                    const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+
+                    const dateAd = new Date(year + '-' + month + '-' + day);
+
+                    const colaborator = new Colaborator(
+                        row['NOME'],
+                        row['SETOR'],
+                        row['ESCALA'],
+                        row['FEIRISTA'] == 'TRUE' ? true : false,
+                        row['TEMPORARIO'] == 'TRUE' ? true : false,
+                        row['CONTATO'],
+                        row['STATUS'],
+                        row['FUNÇÃO'],
+                        row['CPF'],
+                        row['E-MAIL'],
+                        row['E-MAIL INSTITUCIONAL'],
+                        dateAd,
+                        row['SITUAÇÃO - DOCUMENTOS'],
+                        row['OBSERVAÇÕES']
+                    );
+                }
+
+            })
+
+            const values = newValues2.filter(n => n);
+
+            return res.status(200).send(values);
+
+            // const colaborators = rows.map((row) => {
+            //     if (row['DATA - ADMISSÃO'] == date) {
+            //         const day = row['DATA - ADMISSÃO'].substring(0, 2);
+            //         const month = row['DATA - ADMISSÃO'].substring(3, 5);
+            //         const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+
+            //         const dateAd = new Date(year + '-' + month + '-' + day);
+
+            //         const colaborator = new Colaborator(
+            //             row['NOME'],
+            //             row['SETOR'],
+            //             row['ESCALA'],
+            //             row['FEIRISTA'] == 'TRUE' ? true : false,
+            //             row['TEMPORARIO'] == 'TRUE' ? true : false,
+            //             row['CONTATO'],
+            //             row['STATUS'],
+            //             row['FUNÇÃO'],
+            //             row['CPF'],
+            //             row['E-MAIL'],
+            //             row['E-MAIL INSTITUCIONAL'],
+            //             dateAd,
+            //             row['SITUAÇÃO - DOCUMENTOS'],
+            //             row['OBSERVAÇÕES']
+            //         );
+            //         return colaborator;
+            //     }
+            // });
+
+            // return res.send(colaborators);
         });
 
         // colaborators.forEach(async (colaborator) => {
