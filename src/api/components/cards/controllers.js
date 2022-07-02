@@ -154,9 +154,10 @@ router.get('/archives/cards/:doc', async (req, res) => {
                             if(format == html){
                                 fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
                                 console.log('html');
+                            }else{
+                                const pdf = await generatePDF(html);
+                                fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
                             }
-                            const pdf = await generatePDF(html);
-                            fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
                         });
 
                         return res.status(201).json({message: 'Created sucessfully', status: 201});
