@@ -225,8 +225,6 @@ router.get('/archives/heroku/:doc', async (req, res) => {
                     return colaborator;
                 }
             });
-            console.log(newValues);
-
             let newValues2 = rows.filter((row) =>  {
                 if (row['DATA - ADMISSÃO'] == date) {
                     const day = row['DATA - ADMISSÃO'].substring(0, 2);
@@ -255,9 +253,11 @@ router.get('/archives/heroku/:doc', async (req, res) => {
 
             })
 
-            const values = newValues2.filter((el) => {
+            let values = newValues2.filter((el) => {
                 return el != null;
             });
+
+            console.log(values);
 
             return res.status(200).send(values);
 
