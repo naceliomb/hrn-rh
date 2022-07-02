@@ -7,7 +7,6 @@ const fs = require('fs');
 const generatePDF = require('../../middleware/generatePDF');
 const listFiles = require('../../middleware/listFiles');
 const mergePDF = require('../../middleware/mergePDF');
-const { AsyncLocalStorage } = require('async_hooks');
 
 const router = express.Router();
 
@@ -177,56 +176,6 @@ router.get('/archives/cards/:doc', async (req, res) => {
 router.get('/archives/heroku/:doc', async (req, res) => {
     const docId = req.params.doc;
     const date = req.query.date;
-    // let colaborators = [
-    //     {
-    //         name: 'Nacelio Moreira Barbosa',
-    //         departament: 'SCIH',
-    //         workSchedule: 'Comercial',
-    //         diarist: true,
-    //         temp: false,
-    //         contact: '88999999999',
-    //         status: 'OK',
-    //         role: 'Auxiliar Administrativo',
-    //         cpf: '000.000.000-00',
-    //         email: 'naceliombdev@gmail.com',
-    //         emailEnterprise: 'naceliombdev@gmail.com',
-    //         admissionDate: '12/07/2022',
-    //         documentStatus: 'OK',
-    //         comments: 'Encaminhar Link Integração',
-    //     },
-    //     {
-    //         name: 'Nacelio Barbosa',
-    //         departament: 'SCIH',
-    //         workSchedule: 'Comercial',
-    //         diarist: true,
-    //         temp: false,
-    //         contact: '88999999999',
-    //         status: 'OK',
-    //         role: 'Auxiliar Administrativo',
-    //         cpf: '000.000.000-00',
-    //         email: 'naceliombdev@gmail.com',
-    //         emailEnterprise: 'naceliombdev@gmail.com',
-    //         admissionDate: '12/07/2022',
-    //         documentStatus: 'OK',
-    //         comments: 'Encaminhar Link Integração',
-    //     },
-    //     {
-    //         name: 'Nacelio Moreira',
-    //         departament: 'SCIH',
-    //         workSchedule: 'Comercial',
-    //         diarist: true,
-    //         temp: false,
-    //         contact: '88999999999',
-    //         status: 'OK',
-    //         role: 'Auxiliar Administrativo',
-    //         cpf: '000.000.000-00',
-    //         email: 'naceliombdev@gmail.com',
-    //         emailEnterprise: 'naceliombdev@gmail.com',
-    //         admissionDate: '12/07/2022',
-    //         documentStatus: 'OK',
-    //         comments: 'Encaminhar Link Integração',
-    //     },
-    // ];
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
     const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
 
@@ -249,40 +198,6 @@ router.get('/archives/heroku/:doc', async (req, res) => {
             console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
 
             const rows = await sheet.getRows();
-            // .then((rows) => {
-            //     let colaborators = [];
-            //     rows.map((row) => {
-            //         if (row['DATA - ADMISSÃO'] == date) {
-            //             const day = row['DATA - ADMISSÃO'].substring(0, 2);
-            //             const month = row['DATA - ADMISSÃO'].substring(3, 5);
-            //             const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
-
-            //             const dateAd = new Date(year + '-' + month + '-' + day);
-
-            //             const colaborator = new Colaborator(
-            //                 row['NOME'],
-            //                 row['SETOR'],
-            //                 row['ESCALA'],
-            //                 row['FEIRISTA'] == 'TRUE' ? true : false,
-            //                 row['TEMPORARIO'] == 'TRUE' ? true : false,
-            //                 row['CONTATO'],
-            //                 row['STATUS'],
-            //                 row['FUNÇÃO'],
-            //                 row['CPF'],
-            //                 row['E-MAIL'],
-            //                 row['E-MAIL INSTITUCIONAL'],
-            //                 dateAd,
-            //                 row['SITUAÇÃO - DOCUMENTOS'],
-            //                 row['OBSERVAÇÕES']
-            //             );
-            //             console.log(`COLABORATOR: ${colaborator.name} Added`);
-            //             colaborators.push(colaborator)
-
-            //         }
-            //     });
-            //     return res.send(colaborators);;
-            // });
-
             let newValues = rows.map((row) => {
                 if (row['DATA - ADMISSÃO'] == date) {
                     const day = row['DATA - ADMISSÃO'].substring(0, 2);
@@ -340,7 +255,9 @@ router.get('/archives/heroku/:doc', async (req, res) => {
 
             })
 
-            const values = newValues2.filter(n => n);
+            const values = newValues2.filter((el) => {
+                return el != null;
+            });
 
             return res.status(200).send(values);
 
