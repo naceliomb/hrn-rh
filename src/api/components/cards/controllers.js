@@ -173,57 +173,61 @@ router.get('/archives/cards/:doc', async (req, res) => {
     }
 });
 
-router.get('/archives/heroku', async (req, res) => {
-    let colaborators = [
-        {
-            name: 'Nacelio Moreira Barbosa',
-            departament: 'SCIH',
-            workSchedule: 'Comercial',
-            diarist: true,
-            temp: false,
-            contact: '88999999999',
-            status: 'OK',
-            role: 'Auxiliar Administrativo',
-            cpf: '000.000.000-00',
-            email: 'naceliombdev@gmail.com',
-            emailEnterprise: 'naceliombdev@gmail.com',
-            admissionDate: '12/07/2022',
-            documentStatus: 'OK',
-            comments: 'Encaminhar Link Integração',
-        },
-        {
-            name: 'Nacelio Barbosa',
-            departament: 'SCIH',
-            workSchedule: 'Comercial',
-            diarist: true,
-            temp: false,
-            contact: '88999999999',
-            status: 'OK',
-            role: 'Auxiliar Administrativo',
-            cpf: '000.000.000-00',
-            email: 'naceliombdev@gmail.com',
-            emailEnterprise: 'naceliombdev@gmail.com',
-            admissionDate: '12/07/2022',
-            documentStatus: 'OK',
-            comments: 'Encaminhar Link Integração',
-        },
-        {
-            name: 'Nacelio Moreira',
-            departament: 'SCIH',
-            workSchedule: 'Comercial',
-            diarist: true,
-            temp: false,
-            contact: '88999999999',
-            status: 'OK',
-            role: 'Auxiliar Administrativo',
-            cpf: '000.000.000-00',
-            email: 'naceliombdev@gmail.com',
-            emailEnterprise: 'naceliombdev@gmail.com',
-            admissionDate: '12/07/2022',
-            documentStatus: 'OK',
-            comments: 'Encaminhar Link Integração',
-        },
-    ];
+router.get('/archives/heroku/:doc', async (req, res) => {
+    const docId = req.params.doc;
+    const date = req.query.date;
+    // let colaborators = [
+    //     {
+    //         name: 'Nacelio Moreira Barbosa',
+    //         departament: 'SCIH',
+    //         workSchedule: 'Comercial',
+    //         diarist: true,
+    //         temp: false,
+    //         contact: '88999999999',
+    //         status: 'OK',
+    //         role: 'Auxiliar Administrativo',
+    //         cpf: '000.000.000-00',
+    //         email: 'naceliombdev@gmail.com',
+    //         emailEnterprise: 'naceliombdev@gmail.com',
+    //         admissionDate: '12/07/2022',
+    //         documentStatus: 'OK',
+    //         comments: 'Encaminhar Link Integração',
+    //     },
+    //     {
+    //         name: 'Nacelio Barbosa',
+    //         departament: 'SCIH',
+    //         workSchedule: 'Comercial',
+    //         diarist: true,
+    //         temp: false,
+    //         contact: '88999999999',
+    //         status: 'OK',
+    //         role: 'Auxiliar Administrativo',
+    //         cpf: '000.000.000-00',
+    //         email: 'naceliombdev@gmail.com',
+    //         emailEnterprise: 'naceliombdev@gmail.com',
+    //         admissionDate: '12/07/2022',
+    //         documentStatus: 'OK',
+    //         comments: 'Encaminhar Link Integração',
+    //     },
+    //     {
+    //         name: 'Nacelio Moreira',
+    //         departament: 'SCIH',
+    //         workSchedule: 'Comercial',
+    //         diarist: true,
+    //         temp: false,
+    //         contact: '88999999999',
+    //         status: 'OK',
+    //         role: 'Auxiliar Administrativo',
+    //         cpf: '000.000.000-00',
+    //         email: 'naceliombdev@gmail.com',
+    //         emailEnterprise: 'naceliombdev@gmail.com',
+    //         admissionDate: '12/07/2022',
+    //         documentStatus: 'OK',
+    //         comments: 'Encaminhar Link Integração',
+    //     },
+    // ];
+
+    let colaborators = [];
 
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
     const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
@@ -232,22 +236,69 @@ router.get('/archives/heroku', async (req, res) => {
         fs.mkdirSync(downloadsPath);
     }
 
-    try{
-        colaborators.forEach(async (colaborator) => {
-            console.log(`COLABORATOR: ${colaborator.name}`);
-            const template = fs.readFileSync(filePath, 'utf-8');
-            const html = ejs.render(template, { colaborator: colaborator });
-    
-            const pdf = await generatePDF(html);
-            fs.writeFileSync(path.join(downloadsPath, `${colaborator.name}.pdf`), pdf, 'binary');
-        });
-    
-        return res.status(201).json({message: 'created'})
-    }catch(e){
-        console.log(e);
-        return res.status(503).json({message: 'Server Error'});
+    if (!docId) {
+        res.status(400).json({ message: 'Enter with valid Doc Id' });
+        return;
     }
-    
+    if (!date) {
+        res.status(400).json({ message: 'Enter with valid date' });
+        return;
+    }
+
+    try {
+        getDoc(docId).then((doc, colaborators) => {
+            const sheet = doc.sheetsByIndex[0];
+            console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
+
+            sheet.getRows().then((rows, colaborators) => {
+                rows.map((row, colaborators) => {
+                    if (row['DATA - ADMISSÃO'] == date) {
+                        const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                        const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                        const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+
+                        const dateAd = new Date(year + '-' + month + '-' + day);
+
+                        const colaborator = new Colaborator(
+                            row['NOME'],
+                            row['SETOR'],
+                            row['ESCALA'],
+                            row['FEIRISTA'] == 'TRUE' ? true : false,
+                            row['TEMPORARIO'] == 'TRUE' ? true : false,
+                            row['CONTATO'],
+                            row['STATUS'],
+                            row['FUNÇÃO'],
+                            row['CPF'],
+                            row['E-MAIL'],
+                            row['E-MAIL INSTITUCIONAL'],
+                            dateAd,
+                            row['SITUAÇÃO - DOCUMENTOS'],
+                            row['OBSERVAÇÕES']
+                        );
+                        
+                        colaborators.push(colaborator)
+
+                    }
+                });
+            });
+        });
+
+        // colaborators.forEach(async (colaborator) => {
+        //     console.log(`COLABORATOR: ${colaborator.name}`);
+        //     const template = fs.readFileSync(filePath, 'utf-8');
+        //     const html = ejs.render(template, { colaborator: colaborator });
+
+        //     const pdf = await generatePDF(html);
+        //     fs.writeFileSync(path.join(downloadsPath, `${colaborator.name}.pdf`), pdf, 'binary');
+        // });
+
+        // return res.status(201).json({ message: 'created' });
+
+        return res.send(colaborators)
+    } catch (e) {
+        console.log(e);
+        return res.status(503).json({ message: 'Server Error' });
+    }
 });
 
 router.get('/archives/download', async (req, res) => {
