@@ -83,9 +83,12 @@ router.get('/archives/card/:name/:doc', async (req, res) => {
 });
 
 router.get('/archives/cards/:doc', async (req, res) => {
-    console.log('access - http://localhost:3000/archives/cards');
+    const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+    console.log(fullUrl);
     const docId = req.params.doc;
     const date = req.query.date;
+    const format = req.query.format;
+
     let colaborators = [];
     const filePath = path.join(__dirname, '../', '../', 'global', 'welcomeAll.ejs');
     const downloadsPath = path.join(__dirname, '../', '../', 'public', 'downloads');
@@ -145,11 +148,13 @@ router.get('/archives/cards/:doc', async (req, res) => {
                             fs.mkdirSync(dateDirectoryPath);
                         }
                         colaborators.forEach(async (colaborator, index) => {
+                            console.log(`COLABORATOR: ${colaborator.name}`);
                             const template = fs.readFileSync(filePath, 'utf-8');
                             const html = ejs.render(template, { colaborator: colaborator });
-
-                            // fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
-
+                            if(format == html){
+                                fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.html`), html, 'utf-8');
+                                console.log('html');
+                            }
                             const pdf = await generatePDF(html);
                             fs.writeFileSync(path.join(dateDirectoryPath, `${colaborator.name}.pdf`), pdf, 'binary');
                         });
