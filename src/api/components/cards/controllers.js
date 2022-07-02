@@ -193,116 +193,55 @@ router.get('/archives/heroku/:doc', async (req, res) => {
     }
 
     try {
-        getDoc(docId).then(async (doc) => {
-            const sheet = doc.sheetsByIndex[0];
-            console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
+        const doc = await getDoc(docId);
+        const sheet = doc.sheetsByIndex[0];
+        console.log(`Conected SPREADSHEET - SHEET: ${sheet.title}`);
 
-            const rows = await sheet.getRows();
-            let newValues = rows.map((row) => {
-                if (row['DATA - ADMISSÃO'] == date) {
-                    const day = row['DATA - ADMISSÃO'].substring(0, 2);
-                    const month = row['DATA - ADMISSÃO'].substring(3, 5);
-                    const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
+        const rows = await sheet.getRows();
+        const colaboratorsData = rows.map((row) => {
+            if (row['DATA - ADMISSÃO'] == date) {
+                const day = row['DATA - ADMISSÃO'].substring(0, 2);
+                const month = row['DATA - ADMISSÃO'].substring(3, 5);
+                const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
 
-                    const dateAd = new Date(year + '-' + month + '-' + day);
+                const dateAd = new Date(year + '-' + month + '-' + day);
 
-                    const colaborator = new Colaborator(
-                        row['NOME'],
-                        row['SETOR'],
-                        row['ESCALA'],
-                        row['FEIRISTA'] == 'TRUE' ? true : false,
-                        row['TEMPORARIO'] == 'TRUE' ? true : false,
-                        row['CONTATO'],
-                        row['STATUS'],
-                        row['FUNÇÃO'],
-                        row['CPF'],
-                        row['E-MAIL'],
-                        row['E-MAIL INSTITUCIONAL'],
-                        dateAd,
-                        row['SITUAÇÃO - DOCUMENTOS'],
-                        row['OBSERVAÇÕES']
-                    );
-                    return colaborator;
-                }
-            });
-            let newValues2 = rows.filter((row) =>  {
-                if (row['DATA - ADMISSÃO'] == date) {
-                    const day = row['DATA - ADMISSÃO'].substring(0, 2);
-                    const month = row['DATA - ADMISSÃO'].substring(3, 5);
-                    const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
-
-                    const dateAd = new Date(year + '-' + month + '-' + day);
-
-                    const colaborator = new Colaborator(
-                        row['NOME'],
-                        row['SETOR'],
-                        row['ESCALA'],
-                        row['FEIRISTA'] == 'TRUE' ? true : false,
-                        row['TEMPORARIO'] == 'TRUE' ? true : false,
-                        row['CONTATO'],
-                        row['STATUS'],
-                        row['FUNÇÃO'],
-                        row['CPF'],
-                        row['E-MAIL'],
-                        row['E-MAIL INSTITUCIONAL'],
-                        dateAd,
-                        row['SITUAÇÃO - DOCUMENTOS'],
-                        row['OBSERVAÇÕES']
-                    );
-                    return colaborator;
-                }
-
-            })
-
-            let values = newValues2.filter((el) => {
-                return el != null;
-            });
-
-            console.log(values);
-
-            return res.status(200).send(values);
-
-            // const colaborators = rows.map((row) => {
-            //     if (row['DATA - ADMISSÃO'] == date) {
-            //         const day = row['DATA - ADMISSÃO'].substring(0, 2);
-            //         const month = row['DATA - ADMISSÃO'].substring(3, 5);
-            //         const year = row['DATA - ADMISSÃO'].substring(row['DATA - ADMISSÃO'].length - 4);
-
-            //         const dateAd = new Date(year + '-' + month + '-' + day);
-
-            //         const colaborator = new Colaborator(
-            //             row['NOME'],
-            //             row['SETOR'],
-            //             row['ESCALA'],
-            //             row['FEIRISTA'] == 'TRUE' ? true : false,
-            //             row['TEMPORARIO'] == 'TRUE' ? true : false,
-            //             row['CONTATO'],
-            //             row['STATUS'],
-            //             row['FUNÇÃO'],
-            //             row['CPF'],
-            //             row['E-MAIL'],
-            //             row['E-MAIL INSTITUCIONAL'],
-            //             dateAd,
-            //             row['SITUAÇÃO - DOCUMENTOS'],
-            //             row['OBSERVAÇÕES']
-            //         );
-            //         return colaborator;
-            //     }
-            // });
-
-            // return res.send(colaborators);
+                const colaborator = new Colaborator(
+                    row['NOME'],
+                    row['SETOR'],
+                    row['ESCALA'],
+                    row['FEIRISTA'] == 'TRUE' ? true : false,
+                    row['TEMPORARIO'] == 'TRUE' ? true : false,
+                    row['CONTATO'],
+                    row['STATUS'],
+                    row['FUNÇÃO'],
+                    row['CPF'],
+                    row['E-MAIL'],
+                    row['E-MAIL INSTITUCIONAL'],
+                    dateAd,
+                    row['SITUAÇÃO - DOCUMENTOS'],
+                    row['OBSERVAÇÕES']
+                );
+                return colaborator;
+            }
         });
 
-        // colaborators.forEach(async (colaborator) => {
-        //     console.log(`COLABORATOR: ${colaborator.name}`);
-        //     const template = fs.readFileSync(filePath, 'utf-8');
-        //     const html = ejs.render(template, { colaborator: colaborator });
+        const colaborators = colaboratorsData.filter((el) => {
+            return el != null;
+        });
 
-        //     const pdf = await generatePDF(html);
-        //     fs.writeFileSync(path.join(downloadsPath, `${colaborator.name}.pdf`), pdf, 'binary');
-        // });
+        for (const colaborator of colaborators) {
+            console.log(`COLABORATOR: ${colaborator.name}`);
+            const template = fs.readFileSync(filePath, 'utf-8');
+            const html = ejs.render(template, { colaborator: colaborator });
 
-        // return res.status(201).json({ message: 'created' });
+            const pdf = await generatePDF(html);
+            fs.writeFileSync(path.join(downloadsPath, `${colaborator.name}.pdf`), pdf, 'binary');
+        }
+
+        return res.status(201).json({message: 'Created'});
+
+        
     } catch (e) {
         console.log(e);
         return res.status(503).json({ message: 'Server Error' });
